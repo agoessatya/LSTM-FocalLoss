@@ -1,16 +1,18 @@
+import keras
 import numpy as np
 import tensorflow as tf
 import keras_tuner as kt
 import seaborn as sn
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, auc
+from matplotlib.font_manager import FontProperties
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, LSTM, BatchNormalization
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras.callbacks import EarlyStopping
 from keras import backend as K
-
 
 def process_dataset(X, y, time_steps):
     Xs = []
@@ -41,8 +43,6 @@ def focal_loss(gamma=2., alpha=4.):
         return tf.reduce_mean(reduced_fl)
     return focal_loss_fixed
 
-import keras
-
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
@@ -61,14 +61,11 @@ def f1_m(y_true, y_pred):
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 
-METRICS = [
-      tf.keras.metrics.CategoricalAccuracy(name="acc"),
-      keras.metrics.Precision(name='precision'),
-      keras.metrics.Recall(name='recall'),
-      keras.metrics.AUC(name='auc'),
-      keras.metrics.AUC(name='prc', curve='PR'),
-      f1_m
-]
+METRICS = [tf.keras.metrics.CategoricalAccuracy(name="acc"),
+           keras.metrics.Precision(name='precision'),
+           keras.metrics.Recall(name='recall'),
+           keras.metrics.AUC(name='auc'),
+           keras.metrics.AUC(name='prc', curve='PR'), f1_m]
 
 df = pd.read_excel("Dataset_Train.xlsx",
                    parse_dates=['Date'], index_col="Date")
@@ -158,18 +155,12 @@ sn.heatmap(df_cm, cmap="Greys", annot=True)
 
 print(classification_report(y_pred, y_label))
 
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc, precision_recall_curve, auc
-from matplotlib.font_manager import FontProperties
-
 font = FontProperties()
 font.set_style('italic')
-
 fpr = {}
 tpr = {}
 thresh = {}
 roc_auc = {}
-
 n_class = 3
 for i in range(n_class):
     fpr[i], tpr[i], thresh[i] = roc_curve(y_label, pred[:, i], pos_label=i)
@@ -191,13 +182,10 @@ plt.show()
 precision = {}
 recall = {}
 prc_auc = {}
-
 n_class = 3
-
 for i in range(n_class):
     precision[i], recall[i], _ = precision_recall_curve(y_label, pred[:, i], pos_label=i)
     prc_auc[i] = auc(recall[i], precision[i])
-
 baseline = len(y_label[y_label == 1]) / len(y_label)
 
 plt.figure(figsize=(8, 8), dpi=80)
